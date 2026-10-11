@@ -23,6 +23,7 @@
 /storage/app/private/*
 !/storage/app/private/.gitignore
 /vendor
+.playwright-mcp
 _ide_helper.php
 Homestead.json
 Homestead.yaml
