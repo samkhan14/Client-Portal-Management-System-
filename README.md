@@ -1,58 +1,83 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Client Portal Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Agency workspace and client portal for a fictional studio, **Northline Studio**. The product covers onboarding, projects, milestones, tasks, deliverable review, and completion in one Laravel application.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Laravel 13, Inertia.js, React, TypeScript, Tailwind CSS, and MySQL. This environment runs **MariaDB 10.11** through the MySQL protocol (`DB_CONNECTION=mysql`). MariaDB is the MySQL-compatible engine used here; application code and migrations target that protocol. Tests use PHPUnit (Pest is not installed).
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+There is no separate REST API, payment provider, or workflow engine. Mail is stored as queued `outbound_messages` rows. SMTP is not configured.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Setup
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+cp .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Create the databases and user (adjust if you already have MySQL):
 
-## Contributing
+```sql
+CREATE DATABASE client_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE client_portal_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'portal'@'localhost' IDENTIFIED BY 'portal';
+GRANT ALL ON client_portal.* TO 'portal'@'localhost';
+GRANT ALL ON client_portal_testing.* TO 'portal'@'localhost';
+FLUSH PRIVILEGES;
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan migrate --seed
+npm install
+npm run dev
+php artisan serve
+```
 
-## Code of Conduct
+Production assets: `npm run build`. Due-soon notices: `php artisan portal:scan-due-tasks` (also scheduled daily at 08:00).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+If MariaDB is installed but systemd cannot start it in a sandbox, the process can be started directly:
 
-## Security Vulnerabilities
+```bash
+sudo mkdir -p /run/mysqld && sudo chown mysql:mysql /run/mysqld
+sudo mariadbd --user=mysql --datadir=/var/lib/mysql --bind-address=127.0.0.1 --port=3306 \
+  --socket=/run/mysqld/mysqld.sock --pid-file=/run/mysqld/mysqld.pid \
+  --innodb-use-native-aio=0 --thread-handling=pool-of-threads
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+On a normal machine, `sudo service mariadb start` is enough.
 
-## License
+## Demo
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Every seeded password is `password`. Addresses are fictional.
+
+| Person | Email | Role |
+| --- | --- | --- |
+| Ada Okonkwo | ada@northline.example | Platform admin (agency list only) |
+| Mara Ellison | mara@northline.example | Agency owner |
+| Jonah Hale | jonah@northline.example | Project manager |
+| Priya Shah | priya@northline.example | Team member on Brightwater work |
+| Lena Cho | lena@northline.example | Team member on Kite & Co. |
+| Camille Bright | camille@brightwater.example | Client admin, Brightwater Foods |
+| Owen Pike | owen@brightwater.example | Collaborator, Harbor project only |
+| Ruth Gale | ruth@brightwater.example | Read only, Harbor project only |
+| Helen Cho | helen@kiteandco.example | Client admin, Kite & Co. |
+| Nico Vale | nico@kiteandco.example | Collaborator with no project membership |
+
+Harbor packaging (`NL-2401`) has an approved deliverable version that later drafts do not overwrite. Spring tasting (`NL-2402`) is waiting on the client. Kite identity (`NL-2408`) is a second company so client data stays separated.
+
+## Theme
+
+A saved choice is stored on the user and in a `theme` cookie the server reads for the first paint. With no saved choice, the first visit follows the system preference.
+
+## Authorization
+
+The organization is the tenant. Route bindings return 404 for records outside the user's organizations. Policies return 403 inside the organization when the role cannot act. Client queries also drop internal notes, staff-only files, estimates, draft deliverables, time entries, and private activity text.
+
+## Tests
+
+```bash
+php artisan test
+npm run typecheck
+npm run build
+vendor/bin/pint --test
+```
