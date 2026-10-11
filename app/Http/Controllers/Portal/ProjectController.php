@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Portal;
 
+use App\Enums\ChangeRequestStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreChangeRequestRequest;
 use App\Http\Requests\StoreCommentRequest;
 use App\Http\Requests\StoreFileRequest;
 use App\Models\Project;
+use App\Services\ActivityLogger;
 use App\Services\CommentRecorder;
 use App\Services\FileService;
 use App\Services\Workspace;
@@ -42,13 +44,13 @@ class ProjectController extends Controller
         return back()->with('success', 'File shared.');
     }
 
-    public function changeRequest(StoreChangeRequestRequest $request, Project $project, \App\Services\ActivityLogger $activities): RedirectResponse
+    public function changeRequest(StoreChangeRequestRequest $request, Project $project, ActivityLogger $activities): RedirectResponse
     {
         $change = $project->changeRequests()->create([
             'requested_by' => $request->user()->id,
             'title' => $request->string('title')->toString(),
             'description' => $request->string('description')->toString(),
-            'status' => \App\Enums\ChangeRequestStatus::Open,
+            'status' => ChangeRequestStatus::Open,
         ]);
         $activities->log($project->organization_id, $project, $request->user(), 'change_request.opened', 'A change request was opened: '.$change->title, true, $change);
 

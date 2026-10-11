@@ -11,6 +11,7 @@ use App\Models\Invitation;
 use App\Models\Membership;
 use App\Models\OutboundMessage;
 use App\Services\InvitationService;
+use App\Services\MembershipService;
 use App\Support\Access;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -91,7 +92,7 @@ class TeamController extends Controller
         return back()->with('success', 'Invitation revoked.');
     }
 
-    public function updateMembership(UpdateMembershipRequest $request, Membership $membership, \App\Services\MembershipService $service): RedirectResponse
+    public function updateMembership(UpdateMembershipRequest $request, Membership $membership, MembershipService $service): RedirectResponse
     {
         $service->changeRole(
             $membership,
@@ -103,7 +104,7 @@ class TeamController extends Controller
         return back()->with('success', 'Membership updated.');
     }
 
-    public function destroyMembership(Membership $membership, \App\Services\MembershipService $service): RedirectResponse
+    public function destroyMembership(Membership $membership, MembershipService $service): RedirectResponse
     {
         $this->authorize('delete', $membership);
         $service->remove($membership, request()->user());
