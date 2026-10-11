@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+.env
+.env.local
+.env.*.local
+storage/uploads/**
+!storage/uploads/.gitkeep
+coverage
+*.log
+tsconfig.tsbuildinfo
+.DS_Store
+npm-debug.log*
+vendor
+/public/hot
+/public/storage
