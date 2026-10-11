@@ -37,6 +37,11 @@
     --color-foam: #243634;
 }
 
+html,
+body {
+    overflow-x: clip;
+}
+
 body {
     font-family: var(--font-sans);
 }

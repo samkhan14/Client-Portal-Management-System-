@@ -57,7 +57,11 @@ class TeamController extends Controller
                     'usable' => $invitation->isUsable(),
                 ]),
             'queued_messages' => $membership->role->canManageOrganization()
-                ? OutboundMessage::query()->latest()->limit(8)->get(['id', 'email', 'subject', 'body', 'status', 'created_at'])
+                ? OutboundMessage::query()
+                    ->whereIn('email', $this->organizationEmails($organizationId))
+                    ->latest()
+                    ->limit(8)
+                    ->get(['id', 'email', 'subject', 'status', 'created_at'])
                 : [],
             'roles' => array_map(
                 fn (MembershipRole $role) => ['value' => $role->value, 'label' => $role->label()],
@@ -110,5 +114,18 @@ class TeamController extends Controller
         $service->remove($membership, request()->user());
 
         return back()->with('success', 'Person removed from the agency.');
+    }
+
+    /** @return list<string> */
+    private function organizationEmails(int $organizationId): array
+    {
+        $members = Membership::query()
+            ->where('organization_id', $organizationId)
+            ->with('user:id,email')
+            ->get()
+            ->pluck('user.email');
+        $invited = Invitation::query()->where('organization_id', $organizationId)->pluck('email');
+
+        return $members->merge($invited)->filter()->unique()->values()->all();
     }
 }

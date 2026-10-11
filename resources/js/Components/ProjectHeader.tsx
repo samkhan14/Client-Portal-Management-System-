@@ -26,7 +26,7 @@ export function ProjectHeader({
             <div className="grid gap-6 p-6 md:grid-cols-[1.4fr_0.8fr] md:p-8">
                 <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal">{project.reference}</p>
-                    <h1 className="mt-2 font-display text-4xl leading-tight">
+                    <h1 className="mt-2 break-words font-display text-4xl leading-tight">
                         {href ? <Link href={href}>{project.name}</Link> : project.name}
                     </h1>
                     <div className="mt-4 flex flex-wrap gap-2">

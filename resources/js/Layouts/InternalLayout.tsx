@@ -25,29 +25,29 @@ export function InternalLayout({ children }: { children: ReactNode }) {
     };
 
     return (
-        <div className="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
+        <div className="min-h-screen lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
             <aside className="bg-pine text-paper lg:min-h-screen">
-                <div className="flex items-center gap-3 px-5 py-6">
-                    <img src="/brand/mark.jpg" alt="" className="h-11 w-11 rounded-xl object-cover" />
-                    <div>
+                <div className="flex items-center gap-3 px-4 py-4 sm:px-5 sm:py-6">
+                    <img src="/brand/mark.jpg" alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover" />
+                    <div className="min-w-0">
                         <p className="font-display text-lg leading-none">Northline</p>
                         <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-[#d7c4a5]">Studio desk</p>
                     </div>
                 </div>
-                <nav className="flex gap-2 overflow-x-auto px-3 pb-4 lg:block lg:space-y-1 lg:px-3" aria-label="Studio">
+                <nav className="flex flex-wrap gap-2 px-3 pb-4 lg:block lg:space-y-1" aria-label="Studio">
                     {links.filter((link) => link.show(page.props)).map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}
-                            className={`block whitespace-nowrap rounded-xl px-3 py-2 text-sm ${current === link.href ? 'bg-clay text-white' : 'text-[#efe7da] hover:bg-pine-soft'}`}
+                            className={`rounded-xl px-3 py-2 text-sm lg:block ${current === link.href ? 'bg-clay text-white' : 'text-[#efe7da] hover:bg-pine-soft'}`}
                         >
                             {link.label}
                         </Link>
                     ))}
                 </nav>
             </aside>
-            <div>
-                <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <div className="min-w-0">
+                <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-4 sm:px-5">
                     <div>
                         <p className="text-xs uppercase tracking-[0.16em] text-muted">{auth.organization?.name ?? 'Agency'}</p>
                         <p className="text-sm">{auth.user?.name} · {auth.membership?.role_label}</p>
@@ -64,7 +64,7 @@ export function InternalLayout({ children }: { children: ReactNode }) {
                         </button>
                     </div>
                 </header>
-                <main className="mx-auto max-w-6xl px-5 py-8">
+                <main className="mx-auto min-w-0 max-w-6xl px-4 py-6 sm:px-5 sm:py-8">
                     {flash.success ? <p className="mb-4 rounded-2xl bg-foam px-4 py-3 text-sm" role="status">{flash.success}</p> : null}
                     {flash.error ? <p className="mb-4 rounded-2xl bg-[#f3ddd8] px-4 py-3 text-sm" role="alert">{flash.error}</p> : null}
                     {children}

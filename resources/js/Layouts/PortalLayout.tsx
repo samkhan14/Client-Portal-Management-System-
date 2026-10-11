@@ -15,15 +15,15 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     return (
         <div className="min-h-screen">
             <header className="border-b border-line bg-card">
-                <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-5 py-4">
-                    <Link href="/portal" className="flex items-center gap-3">
-                        <img src="/brand/mark.jpg" alt="" className="h-10 w-10 rounded-xl object-cover" />
-                        <span>
+                <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                    <Link href="/portal" className="flex min-w-0 items-center gap-3">
+                        <img src="/brand/mark.jpg" alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover" />
+                        <span className="min-w-0">
                             <span className="block font-display text-xl leading-none">Northline</span>
                             <span className="text-xs uppercase tracking-[0.16em] text-muted">Client portal</span>
                         </span>
                     </Link>
-                    <nav className="flex items-center gap-2 text-sm" aria-label="Portal">
+                    <nav className="flex flex-wrap items-center gap-2 text-sm" aria-label="Portal">
                         <Link href="/portal" className="rounded-full px-3 py-1.5 hover:bg-paper">Overview</Link>
                         <Link href="/notifications" className="rounded-full px-3 py-1.5 hover:bg-paper">Notices{unread ? ` (${unread})` : ''}</Link>
                         <button type="button" className="rounded-full border border-line px-3 py-1.5" onClick={toggleTheme}>Theme</button>
@@ -31,7 +31,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     </nav>
                 </div>
             </header>
-            <main className="mx-auto max-w-5xl px-5 py-8">
+            <main className="mx-auto min-w-0 max-w-5xl px-4 py-6 sm:px-5 sm:py-8">
                 <p className="mb-6 text-sm text-muted">{auth.user?.name} · {auth.membership?.role_label}</p>
                 {flash.success ? <p className="mb-4 rounded-2xl bg-foam px-4 py-3 text-sm" role="status">{flash.success}</p> : null}
                 {children}

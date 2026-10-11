@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class MembershipService
@@ -55,7 +56,10 @@ class MembershipService
             $locked = Membership::query()->whereKey($membership->id)->lockForUpdate()->firstOrFail();
             ProjectMember::query()->where('user_id', $locked->user_id)->whereHas('project', fn ($query) => $query->where('organization_id', $locked->organization_id))->delete();
             $organizationId = $locked->organization_id;
+            $userId = $locked->user_id;
             $locked->delete();
+            DB::table('users')->where('id', $userId)->update(['remember_token' => Str::random(60)]);
+            DB::table('sessions')->where('user_id', $userId)->delete();
             $this->activities->log($organizationId, null, $actor, 'membership.removed', 'A person was removed from the agency.', false);
         });
     }

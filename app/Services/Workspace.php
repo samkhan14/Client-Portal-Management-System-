@@ -9,6 +9,7 @@ use App\Models\Comment;
 use App\Models\Deliverable;
 use App\Models\DeliverableVersion;
 use App\Models\Invoice;
+use App\Models\Membership;
 use App\Models\Project;
 use App\Models\StoredFile;
 use App\Models\Task;
@@ -53,6 +54,8 @@ class Workspace
             'change_requests' => $this->changeRequests($project),
             'invoices' => $financial ? $this->invoices($project, false) : [],
             'members' => $project->members->map(fn ($member) => ['id' => $member->user_id, 'name' => $member->user->name, 'email' => $member->user->email])->values(),
+            'candidates' => $this->memberCandidates($project),
+            'task_options' => $this->taskOptions($project->id),
             'can' => [
                 'update' => $request->user()->can('update', $project),
                 'transition' => $request->user()->can('transition', $project),
@@ -170,6 +173,47 @@ class Workspace
             'estimate_hours' => $client ? null : $task->estimate_hours,
             'client_visible' => $task->client_visible,
         ];
+    }
+
+    /** @return list<array{id: int, name: string, email: string, role_label: string}> */
+    private function memberCandidates(Project $project): array
+    {
+        return Membership::query()
+            ->with('user:id,name,email')
+            ->where('organization_id', $project->organization_id)
+            ->where(function ($query) use ($project) {
+                $query->whereIn('role', [
+                    MembershipRole::AgencyOwner->value,
+                    MembershipRole::ProjectManager->value,
+                    MembershipRole::TeamMember->value,
+                ])->orWhere('client_company_id', $project->client_company_id);
+            })
+            ->get()
+            ->sortBy(fn (Membership $membership) => $membership->user?->name ?? '')
+            ->map(fn (Membership $membership) => [
+                'id' => $membership->user_id,
+                'name' => $membership->user->name,
+                'email' => $membership->user->email,
+                'role_label' => $membership->role->label(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** @return list<array{id: int, title: string, parent_id: int|null}> */
+    private function taskOptions(int $projectId): array
+    {
+        return Task::query()
+            ->where('project_id', $projectId)
+            ->orderBy('title')
+            ->orderBy('id')
+            ->get(['id', 'title', 'parent_id'])
+            ->map(fn (Task $task) => [
+                'id' => $task->id,
+                'title' => $task->title,
+                'parent_id' => $task->parent_id,
+            ])
+            ->all();
     }
 
     /** @return array<string, mixed> */

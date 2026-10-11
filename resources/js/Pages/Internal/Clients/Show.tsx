@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { InternalLayout } from '@/Layouts/InternalLayout';
 import { Badge } from '@/Components/Badge';
+import { EmptyState } from '@/Components/EmptyState';
 import { Field } from '@/Components/Field';
 
 type Company = {
@@ -28,6 +29,7 @@ function Show({ company }: { company: Company }) {
             <div className="mt-8 grid gap-6 lg:grid-cols-2">
                 <section className="rounded-3xl border border-line bg-card p-5">
                     <h2 className="font-display text-2xl">Contacts</h2>
+                    {company.contacts.length === 0 ? <div className="mt-3"><EmptyState title="No contacts" body="Add the people at this company who the studio works with." /></div> : (
                     <ul className="mt-3 space-y-2 text-sm">
                         {company.contacts.map((person) => (
                             <li key={person.id} className="flex justify-between gap-3">
@@ -36,6 +38,7 @@ function Show({ company }: { company: Company }) {
                             </li>
                         ))}
                     </ul>
+                    )}
                     <form className="mt-4 grid gap-2" onSubmit={(event) => { event.preventDefault(); contact.post(`/clients/${company.id}/contacts`, { preserveScroll: true, onSuccess: () => contact.reset() }); }}>
                         <Field label="Name" error={contact.errors.name}><input value={contact.data.name} onChange={(event) => contact.setData('name', event.target.value)} required /></Field>
                         <Field label="Email" error={contact.errors.email}><input type="email" value={contact.data.email} onChange={(event) => contact.setData('email', event.target.value)} /></Field>
@@ -44,6 +47,7 @@ function Show({ company }: { company: Company }) {
                 </section>
                 <section className="rounded-3xl border border-line bg-card p-5">
                     <h2 className="font-display text-2xl">Onboarding</h2>
+                    {company.onboarding.length === 0 ? <div className="mt-3"><EmptyState title="Checklist is empty" body="Add the steps this client still needs to finish." /></div> : (
                     <ul className="mt-3 space-y-2">
                         {company.onboarding.map((step) => (
                             <li key={step.id}>
@@ -53,6 +57,7 @@ function Show({ company }: { company: Company }) {
                             </li>
                         ))}
                     </ul>
+                    )}
                     <form className="mt-4 grid gap-2" onSubmit={(event) => { event.preventDefault(); item.post(`/clients/${company.id}/onboarding`, { preserveScroll: true, onSuccess: () => item.reset() }); }}>
                         <Field label="Checklist item" error={item.errors.title}><input value={item.data.title} onChange={(event) => item.setData('title', event.target.value)} required /></Field>
                         <button type="submit" disabled={item.processing} className="rounded-full bg-clay px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50">Add item</button>

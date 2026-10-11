@@ -1,8 +1,10 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { InternalLayout } from '@/Layouts/InternalLayout';
+import { EmptyState } from '@/Components/EmptyState';
 import { Field } from '@/Components/Field';
+import type { SharedProps } from '@/types';
 
-type Member = { id: number; name: string; email: string; role: string; role_label: string; client: string | null; client_company_id: number | null };
+type Member = { id: number; user_id: number; name: string; email: string; role: string; role_label: string; client: string | null; client_company_id: number | null };
 type Invite = { id: number; email: string; role_label: string; usable: boolean; accepted_at: string | null; revoked_at: string | null };
 
 function Index({
@@ -20,6 +22,7 @@ function Index({
 }) {
     const form = useForm({ email: '', role: roles[0]?.value ?? 'TEAM_MEMBER', client_company_id: '' as number | '' });
     const clientRole = form.data.role.startsWith('CLIENT') || form.data.role === 'READ_ONLY';
+    const currentUserId = usePage<SharedProps>().props.auth.user?.id;
 
     return (
         <>
@@ -33,7 +36,7 @@ function Index({
                             <p className="font-semibold">{member.name}</p>
                             <p className="text-sm text-muted">{member.email} · {member.role_label}{member.client ? ` · ${member.client}` : ''}</p>
                         </div>
-                        <button type="button" className="text-xs text-clay" onClick={() => router.delete(`/memberships/${member.id}`, { preserveScroll: true })}>Remove</button>
+                        {member.user_id !== currentUserId ? <button type="button" className="text-xs text-clay" onClick={() => router.delete(`/memberships/${member.id}`, { preserveScroll: true })}>Remove</button> : null}
                     </li>
                 ))}
             </ul>
@@ -55,6 +58,7 @@ function Index({
                 <button type="submit" disabled={form.processing} className="rounded-full bg-clay px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 md:col-span-2">{form.processing ? 'Sending…' : 'Issue invitation'}</button>
             </form>
             <h2 className="mt-8 font-display text-2xl">Invitations</h2>
+            {invitations.length === 0 ? <div className="mt-3"><EmptyState title="No invitations yet" body="Issue an invitation above. The same confirmation is shown whether or not that email already has an account." /></div> : (
             <ul className="mt-3 space-y-2 text-sm">
                 {invitations.map((invitation) => (
                     <li key={invitation.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line px-4 py-3">
@@ -63,6 +67,7 @@ function Index({
                     </li>
                 ))}
             </ul>
+            )}
             {queued_messages.length > 0 ? (
                 <section className="mt-8">
                     <h2 className="font-display text-2xl">Queued mail</h2>

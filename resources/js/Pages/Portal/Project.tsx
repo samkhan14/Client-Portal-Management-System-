@@ -3,6 +3,7 @@ import { PortalLayout } from '@/Layouts/PortalLayout';
 import { ActivityFeed } from '@/Components/ActivityFeed';
 import { ApprovalDialog } from '@/Components/ApprovalDialog';
 import { CommentThread } from '@/Components/CommentThread';
+import { EmptyState } from '@/Components/EmptyState';
 import { FileList } from '@/Components/FileList';
 import { MilestoneList } from '@/Components/MilestoneList';
 import { ProjectHeader } from '@/Components/ProjectHeader';
@@ -59,6 +60,7 @@ function ProjectPage(props: {
                     </div>
                     <div className="rounded-3xl border border-line bg-card p-5">
                         <h2 className="mb-3 font-display text-2xl">For your review</h2>
+                        {props.deliverables.length === 0 ? <EmptyState title="Nothing to review" body="Submitted deliverables will appear here. Drafts stay with the studio." /> : null}
                         {props.deliverables.map((deliverable) => (
                             <article key={deliverable.id} className="mb-4">
                                 <h3 className="font-semibold">{deliverable.title}</h3>
@@ -88,20 +90,24 @@ function ProjectPage(props: {
                     </div>
                     <div className="rounded-3xl border border-line bg-card p-5">
                         <h2 className="mb-3 font-display text-2xl">Invoices</h2>
-                        <ul className="space-y-2 text-sm">
-                            {props.invoices.map((invoice) => <li key={invoice.id}>{invoice.number} · {invoice.amount} · {invoice.status_label}{invoice.due_on ? ` · due ${invoice.due_on}` : ''}</li>)}
-                        </ul>
+                        {props.invoices.length === 0 ? <EmptyState title="No shared invoices" body="Invoices the studio has shared with you will be listed here." /> : (
+                            <ul className="space-y-2 text-sm">
+                                {props.invoices.map((invoice) => <li key={invoice.id}>{invoice.number} · {invoice.amount} · {invoice.status_label}{invoice.due_on ? ` · due ${invoice.due_on}` : ''}</li>)}
+                            </ul>
+                        )}
                     </div>
                     <div className="rounded-3xl border border-line bg-card p-5">
                         <h2 className="mb-3 font-display text-2xl">Change requests</h2>
-                        <ul className="space-y-2 text-sm">
-                            {props.change_requests.map((item) => <li key={item.id}><span className="font-semibold">{item.title}</span> · {item.status_label}<p>{item.description}</p></li>)}
-                        </ul>
+                        {props.change_requests.length === 0 ? <EmptyState title="No change requests" body="Ask for a change when the agreed scope needs to move." /> : (
+                            <ul className="space-y-2 text-sm">
+                                {props.change_requests.map((item) => <li key={item.id}><span className="font-semibold">{item.title}</span> · {item.status_label}<p>{item.description}</p></li>)}
+                            </ul>
+                        )}
                         {props.can.change_request ? (
                             <form className="mt-4 space-y-2" onSubmit={(event) => { event.preventDefault(); change.post(`/portal/projects/${props.project.id}/change-requests`, { preserveScroll: true, onSuccess: () => change.reset() }); }}>
                                 <Field label="Ask for a change" error={change.errors.title}><input value={change.data.title} onChange={(event) => change.setData('title', event.target.value)} required /></Field>
                                 <Field label="Detail" error={change.errors.description}><textarea value={change.data.description} onChange={(event) => change.setData('description', event.target.value)} required /></Field>
-                                <button type="submit" disabled={change.processing} className="rounded-full bg-clay px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Send request</button>
+                                <button type="submit" disabled={change.processing} className="rounded-full bg-clay px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{change.processing ? 'Sending…' : 'Send request'}</button>
                             </form>
                         ) : null}
                     </div>

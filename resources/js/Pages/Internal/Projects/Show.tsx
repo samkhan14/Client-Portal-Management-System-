@@ -1,8 +1,9 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { InternalLayout } from '@/Layouts/InternalLayout';
 import { ActivityFeed } from '@/Components/ActivityFeed';
 import { CommentThread } from '@/Components/CommentThread';
+import { EmptyState } from '@/Components/EmptyState';
 import { FileList } from '@/Components/FileList';
 import { MilestoneList } from '@/Components/MilestoneList';
 import { Pagination } from '@/Components/Pagination';
@@ -56,6 +57,8 @@ type ShowProps = {
     change_requests: Array<{ id: number; title: string; description: string; status: string; status_label: string; decision_note: string | null; requester: string | null }>;
     invoices: Array<{ id: number; number: string; amount: string; status: string; status_label: string; client_visible: boolean }>;
     members: Array<{ id: number; name: string; email: string }>;
+    candidates: Array<{ id: number; name: string; email: string; role_label: string }>;
+    task_options: Array<{ id: number; title: string; parent_id: number | null }>;
     can: { update: boolean; transition: boolean; manage_members: boolean; financials: boolean; create_task: boolean; draft_deliverable: boolean };
 };
 
@@ -88,6 +91,24 @@ function Show(props: ShowProps) {
     const statusForm = useForm({ status: projectMoves[project.status]?.[0] ?? '', outstanding_request: project.outstanding_request ?? '' });
     const timeForm = useForm({ minutes: 60, work_date: '', note: '', task_id: '' as number | '' });
     const memberForm = useForm({ member_ids: props.members.map((member) => member.id) });
+    const roster = props.members.map((member) => member.id).join(',');
+    const parentOptions = props.task_options.filter((task) => !task.parent_id);
+
+    useEffect(() => {
+        memberForm.setData('member_ids', props.members.map((member) => member.id));
+        // The roster string is the membership snapshot for this project.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [roster]);
+
+    const toggleMember = (id: number) => {
+        if (id === project.manager?.id) {
+            return;
+        }
+        const selected = memberForm.data.member_ids.includes(id)
+            ? memberForm.data.member_ids.filter((memberId) => memberId !== id)
+            : [...memberForm.data.member_ids, id];
+        memberForm.setData('member_ids', selected);
+    };
 
     return (
         <>
@@ -128,7 +149,55 @@ function Show(props: ShowProps) {
                     </button>
                 </form>
             ) : null}
-            <div className="mt-6 flex gap-2" role="tablist">
+            {can.manage_members ? (
+                <section className="mt-6 rounded-3xl border border-line bg-card p-5">
+                    <h2 className="font-display text-2xl">Project members</h2>
+                    <p className="mt-1 text-sm text-muted">Add agency people or people from this client company. Someone from another company cannot be added.</p>
+                    <form
+                        className="mt-4 space-y-3"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            const managerId = project.manager?.id;
+                            const memberIds = managerId && !memberForm.data.member_ids.includes(managerId)
+                                ? [...memberForm.data.member_ids, managerId]
+                                : memberForm.data.member_ids;
+                            memberForm.transform((data) => ({ ...data, member_ids: memberIds }));
+                            memberForm.put(`/projects/${project.id}/members`, { preserveScroll: true });
+                        }}
+                    >
+                        {props.candidates.length === 0 ? <EmptyState title="No eligible people" body="Invite someone to this agency or client company before adding them here." /> : (
+                            <ul className="grid gap-2 sm:grid-cols-2">
+                                {props.candidates.map((candidate) => {
+                                    const locked = candidate.id === project.manager?.id;
+                                    const checked = locked || memberForm.data.member_ids.includes(candidate.id);
+                                    return (
+                                        <li key={candidate.id}>
+                                            <label className="flex items-start gap-3 rounded-2xl border border-line px-3 py-2 text-sm">
+                                                <input
+                                                    type="checkbox"
+                                                    className="mt-1"
+                                                    checked={checked}
+                                                    disabled={locked || memberForm.processing}
+                                                    onChange={() => toggleMember(candidate.id)}
+                                                />
+                                                <span className="min-w-0">
+                                                    <span className="block font-semibold">{candidate.name}</span>
+                                                    <span className="block break-all text-xs text-muted">{candidate.email} · {candidate.role_label}{locked ? ' · project manager' : ''}</span>
+                                                </span>
+                                            </label>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                        {memberForm.errors.member_ids ? <p className="text-sm text-clay-deep" role="alert">{memberForm.errors.member_ids}</p> : null}
+                        <button type="submit" disabled={memberForm.processing} className="rounded-full bg-pine px-4 py-2 text-sm font-semibold text-paper disabled:opacity-50">
+                            {memberForm.processing ? 'Saving members…' : 'Save members'}
+                        </button>
+                    </form>
+                </section>
+            ) : null}
+            <div className="mt-6 flex flex-wrap gap-2" role="tablist">
                 {(['work', 'review', 'files', 'money'] as const).map((item) => (
                     <button key={item} type="button" role="tab" aria-selected={tab === item} className={`rounded-full px-3 py-1.5 text-sm ${tab === item ? 'bg-teal text-white' : 'border border-line'}`} onClick={() => setTab(item)}>
                         {item}
@@ -170,13 +239,13 @@ function Show(props: ShowProps) {
                                 <Field label="Parent task" error={taskForm.errors.parent_id}>
                                     <select value={taskForm.data.parent_id} onChange={(event) => taskForm.setData('parent_id', event.target.value ? Number(event.target.value) : '')}>
                                         <option value="">None</option>
-                                        {props.tasks.data.filter((task) => !task.parent_id).map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}
+                                        {parentOptions.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}
                                     </select>
                                 </Field>
                                 <Field label="Prerequisite" error={taskForm.errors.prerequisite_task_id}>
                                     <select value={taskForm.data.prerequisite_task_id} onChange={(event) => taskForm.setData('prerequisite_task_id', event.target.value ? Number(event.target.value) : '')}>
                                         <option value="">None</option>
-                                        {props.tasks.data.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}
+                                        {props.task_options.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}
                                     </select>
                                 </Field>
                                 <Field label="Due" error={taskForm.errors.due_date}><input type="date" value={taskForm.data.due_date} onChange={(event) => taskForm.setData('due_date', event.target.value)} /></Field>
@@ -192,6 +261,7 @@ function Show(props: ShowProps) {
                 <div className="mt-6 grid gap-6 lg:grid-cols-2">
                     <section className="rounded-3xl border border-line bg-card p-5">
                         <h2 className="mb-4 font-display text-2xl">Deliverables</h2>
+                        {props.deliverables.length === 0 ? <EmptyState title="No deliverables" body="Start a draft when there is something for the client to review." /> : null}
                         {props.deliverables.map((deliverable) => (
                             <article key={deliverable.id} className="mb-4 rounded-2xl bg-paper p-4">
                                 <h3 className="font-semibold">{deliverable.title}</h3>
@@ -214,9 +284,13 @@ function Show(props: ShowProps) {
                         ))}
                         {can.draft_deliverable ? (
                             <form className="space-y-2" onSubmit={(event) => { event.preventDefault(); deliverableForm.post(`/projects/${project.id}/deliverables`, { preserveScroll: true, onSuccess: () => deliverableForm.reset() }); }}>
-                                <input className="input" placeholder="Deliverable title" aria-label="Deliverable title" value={deliverableForm.data.title} onChange={(event) => deliverableForm.setData('title', event.target.value)} required />
-                                <textarea className="input" placeholder="Draft summary" aria-label="Draft summary" value={deliverableForm.data.summary} onChange={(event) => deliverableForm.setData('summary', event.target.value)} />
-                                <button type="submit" disabled={deliverableForm.processing} className="rounded-full bg-pine px-3 py-1.5 text-sm text-paper disabled:opacity-50">Start draft</button>
+                                <Field label="Deliverable title" error={deliverableForm.errors.title}>
+                                    <input placeholder="Deliverable title" value={deliverableForm.data.title} onChange={(event) => deliverableForm.setData('title', event.target.value)} required />
+                                </Field>
+                                <Field label="Draft summary" error={deliverableForm.errors.summary}>
+                                    <textarea placeholder="Draft summary" value={deliverableForm.data.summary} onChange={(event) => deliverableForm.setData('summary', event.target.value)} />
+                                </Field>
+                                <button type="submit" disabled={deliverableForm.processing} className="rounded-full bg-pine px-3 py-1.5 text-sm text-paper disabled:opacity-50">{deliverableForm.processing ? 'Starting…' : 'Start draft'}</button>
                             </form>
                         ) : null}
                     </section>
@@ -242,41 +316,40 @@ function Show(props: ShowProps) {
                 <div className="mt-6 grid gap-6 lg:grid-cols-2">
                     <section className="rounded-3xl border border-line bg-card p-5">
                         <h2 className="font-display text-2xl">Time</h2>
-                        <ul className="mt-3 space-y-2 text-sm">
-                            {props.time_entries.map((entry) => (
-                                <li key={entry.id}>{entry.work_date} · {entry.user} · {entry.minutes} min {entry.task ? `· ${entry.task}` : ''} {entry.note ? `· ${entry.note}` : ''}</li>
-                            ))}
-                        </ul>
+                        {props.time_entries.length === 0 ? <div className="mt-3"><EmptyState title="No time logged" body="Minutes recorded here stay on the studio side of the project." /></div> : (
+                            <ul className="mt-3 space-y-2 text-sm">
+                                {props.time_entries.map((entry) => (
+                                    <li key={entry.id}>{entry.work_date} · {entry.user} · {entry.minutes} min {entry.task ? `· ${entry.task}` : ''} {entry.note ? `· ${entry.note}` : ''}</li>
+                                ))}
+                            </ul>
+                        )}
                         <form className="mt-4 grid gap-2" onSubmit={(event) => { event.preventDefault(); timeForm.post(`/projects/${project.id}/time-entries`, { preserveScroll: true, onSuccess: () => timeForm.reset('note') }); }}>
-                            <input className="input" type="number" min={1} aria-label="Minutes" value={timeForm.data.minutes} onChange={(event) => timeForm.setData('minutes', Number(event.target.value))} />
-                            <input className="input" type="date" aria-label="Work date" required value={timeForm.data.work_date} onChange={(event) => timeForm.setData('work_date', event.target.value)} />
-                            <input className="input" placeholder="Note" aria-label="Time note" value={timeForm.data.note} onChange={(event) => timeForm.setData('note', event.target.value)} />
-                            <button type="submit" disabled={timeForm.processing} className="rounded-full bg-pine px-3 py-1.5 text-sm text-paper disabled:opacity-50">Log time</button>
+                            <Field label="Minutes" error={timeForm.errors.minutes}><input type="number" min={1} value={timeForm.data.minutes} onChange={(event) => timeForm.setData('minutes', Number(event.target.value))} /></Field>
+                            <Field label="Work date" error={timeForm.errors.work_date}><input type="date" required value={timeForm.data.work_date} onChange={(event) => timeForm.setData('work_date', event.target.value)} /></Field>
+                            <Field label="Note" error={timeForm.errors.note}><input value={timeForm.data.note} onChange={(event) => timeForm.setData('note', event.target.value)} /></Field>
+                            <button type="submit" disabled={timeForm.processing} className="rounded-full bg-pine px-3 py-1.5 text-sm text-paper disabled:opacity-50">{timeForm.processing ? 'Saving…' : 'Log time'}</button>
                         </form>
                     </section>
                     <section className="rounded-3xl border border-line bg-card p-5">
                         <h2 className="font-display text-2xl">Invoices and changes</h2>
-                        <ul className="mt-3 space-y-2 text-sm">
-                            {props.invoices.map((invoice) => <li key={invoice.id}>{invoice.number} · {invoice.amount} · {invoice.status_label}{invoice.client_visible ? ' · shared' : ''}</li>)}
-                        </ul>
-                        <ul className="mt-4 space-y-2 text-sm">
-                            {props.change_requests.map((item) => (
-                                <li key={item.id}>
-                                    <p className="font-semibold">{item.title} · {item.status_label}</p>
-                                    <p className="text-muted">{item.description}</p>
-                                    {can.update && item.status === 'OPEN' ? (
-                                        <button type="button" className="text-xs font-semibold text-teal" onClick={() => router.post(`/change-requests/${item.id}/decide`, { status: 'ACCEPTED', decision_note: 'Accepted into the plan.' }, { preserveScroll: true })}>Accept</button>
-                                    ) : null}
-                                </li>
-                            ))}
-                        </ul>
-                        {can.manage_members ? (
-                            <form className="mt-4 space-y-2" onSubmit={(event) => { event.preventDefault(); memberForm.put(`/projects/${project.id}/members`, { preserveScroll: true }); }}>
-                                <p className="text-sm font-semibold">Project members</p>
-                                {props.members.map((member) => <p key={member.id} className="text-sm">{member.name}</p>)}
-                                <p className="text-xs text-muted">Membership changes are saved with the current roster. Add people from the client company before inviting them onto the project.</p>
-                            </form>
-                        ) : null}
+                        {props.invoices.length === 0 ? <div className="mt-3"><EmptyState title="No invoices" body="Recorded invoices for this project show up here." /></div> : (
+                            <ul className="mt-3 space-y-2 text-sm">
+                                {props.invoices.map((invoice) => <li key={invoice.id}>{invoice.number} · {invoice.amount} · {invoice.status_label}{invoice.client_visible ? ' · shared' : ''}</li>)}
+                            </ul>
+                        )}
+                        {props.change_requests.length === 0 ? <div className="mt-4"><EmptyState title="No change requests" body="Client requests to change scope will be listed here." /></div> : (
+                            <ul className="mt-4 space-y-2 text-sm">
+                                {props.change_requests.map((item) => (
+                                    <li key={item.id}>
+                                        <p className="font-semibold">{item.title} · {item.status_label}</p>
+                                        <p className="text-muted">{item.description}</p>
+                                        {can.update && item.status === 'OPEN' ? (
+                                            <button type="button" className="text-xs font-semibold text-teal" onClick={() => router.post(`/change-requests/${item.id}/decide`, { status: 'ACCEPTED', decision_note: 'Accepted into the plan.' }, { preserveScroll: true })}>Accept</button>
+                                        ) : null}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </section>
                 </div>
             ) : null}

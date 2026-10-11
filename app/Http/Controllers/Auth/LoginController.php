@@ -26,6 +26,13 @@ class LoginController extends Controller
         $request->session()->regenerate();
         $user = $request->user();
         $membership = $user->currentMembership();
+        if (! $membership && ! $user->is_platform_admin) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()->withErrors(['email' => 'Those credentials were not recognized.'])->onlyInput('email');
+        }
         if ($membership) {
             $request->session()->put('current_organization_id', $membership->organization_id);
         }

@@ -1,6 +1,7 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { InternalLayout } from '@/Layouts/InternalLayout';
 import { Badge } from '@/Components/Badge';
+import { EmptyState } from '@/Components/EmptyState';
 import { Field } from '@/Components/Field';
 import { Pagination } from '@/Components/Pagination';
 import type { Pager, SharedProps } from '@/types';
@@ -29,6 +30,7 @@ function Index({ invoices, projects, can_manage }: { invoices: Pager<InvoiceRow>
         <>
             <Head title="Invoices" />
             <h1 className="mb-6 font-display text-4xl">Invoices</h1>
+            {invoices.data.length === 0 ? <EmptyState title="No invoices" body="Record an invoice when the studio is ready to bill a project." /> : (
             <ul className="divide-y divide-line rounded-3xl border border-line bg-card">
                 {invoices.data.map((invoice) => (
                     <li key={invoice.id} className="px-5 py-4 text-sm">
@@ -41,6 +43,7 @@ function Index({ invoices, projects, can_manage }: { invoices: Pager<InvoiceRow>
                     </li>
                 ))}
             </ul>
+            )}
             <div className="mt-4"><Pagination page={invoices.current_page} last={invoices.last_page} total={invoices.total} /></div>
             {can_manage ? (
                 <form className="mt-8 grid gap-3 rounded-3xl border border-line bg-card p-5 md:grid-cols-2" onSubmit={(event) => { event.preventDefault(); form.post('/invoices', { preserveScroll: true, onSuccess: () => form.reset('number', 'amount', 'notes', 'internal_notes') }); }}>
@@ -63,7 +66,7 @@ function Index({ invoices, projects, can_manage }: { invoices: Pager<InvoiceRow>
                     <Field label="Client note" error={form.errors.notes}><input value={form.data.notes} onChange={(event) => form.setData('notes', event.target.value)} /></Field>
                     <Field label="Internal note" error={form.errors.internal_notes}><input value={form.data.internal_notes} onChange={(event) => form.setData('internal_notes', event.target.value)} /></Field>
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.data.client_visible} onChange={(event) => form.setData('client_visible', event.target.checked)} /> Visible to the client</label>
-                    <button type="submit" disabled={form.processing} className="rounded-full bg-clay px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Record invoice</button>
+                    <button type="submit" disabled={form.processing} className="rounded-full bg-clay px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{form.processing ? 'Saving…' : 'Record invoice'}</button>
                 </form>
             ) : null}
         </>

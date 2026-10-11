@@ -30,7 +30,7 @@ function Home({
                                     <Link href={`/portal/projects/${project.id}`} className="block rounded-3xl border border-line bg-card p-5">
                                         <p className="text-xs uppercase tracking-[0.16em] text-muted">{project.reference}</p>
                                         <div className="mt-1 flex items-center justify-between gap-3">
-                                            <h3 className="font-display text-2xl">{project.name}</h3>
+                                            <h3 className="min-w-0 break-words font-display text-2xl">{project.name}</h3>
                                             <span className="font-display text-2xl text-clay">{project.progress}%</span>
                                         </div>
                                         <div className="mt-2"><Badge value={project.status} label={project.status_label} /></div>

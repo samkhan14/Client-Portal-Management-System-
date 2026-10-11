@@ -19,7 +19,7 @@ export function FileList({ files, uploadUrl, canUpload, showVisibility }: { file
                 {files.map((file) => (
                     <li key={file.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
                         <div>
-                            <a className="font-semibold text-teal" href={`/files/${file.id}/download`}>
+                            <a className="font-semibold break-all text-teal" href={`/files/${file.id}/download`}>
                                 {file.name}
                             </a>
                             <p className="text-xs text-muted">

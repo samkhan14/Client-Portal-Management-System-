@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureActiveMembership;
 use App\Http\Middleware\EnsureClient;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsureStaff;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => EnsureStaff::class,
             'client' => EnsureClient::class,
             'platform' => EnsurePlatformAdmin::class,
+            'member' => EnsureActiveMembership::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
