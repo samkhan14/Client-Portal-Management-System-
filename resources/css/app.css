@@ -1,0 +1,91 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../js/**/*.tsx';
+
+@theme inline {
+    --font-sans: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Fraunces', ui-serif, Georgia, serif;
+    --color-paper: var(--paper);
+    --color-ink: var(--ink);
+    --color-card: var(--card);
+    --color-line: var(--line);
+    --color-muted: var(--muted);
+    --color-clay: #c4622d;
+    --color-clay-deep: #8d3f16;
+    --color-pine: #1c2b2a;
+    --color-pine-soft: #243634;
+    --color-teal: #3d6b64;
+    --color-foam: #e7f0ee;
+}
+
+:root {
+    --paper: #f3efe6;
+    --ink: #1c2b2a;
+    --card: #faf7f1;
+    --line: #d9d1c3;
+    --muted: #5c675f;
+}
+
+.dark {
+    --paper: #121a19;
+    --ink: #f3efe6;
+    --card: #1c2b2a;
+    --line: #314240;
+    --muted: #b7c2bb;
+    --color-foam: #243634;
+}
+
+html,
+body {
+    overflow-x: clip;
+}
+
+body {
+    font-family: var(--font-sans);
+}
+
+h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+}
+
+dialog {
+    margin: auto;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    max-width: 34rem;
+    width: calc(100% - 2rem);
+}
+
+dialog::backdrop {
+    background: rgb(28 43 42 / 0.62);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.field input,
+.field select,
+.field textarea,
+.input {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    border-radius: 0.7rem;
+    padding: 0.6rem 0.75rem;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.input:focus {
+    outline: 2px solid #c4622d;
+    outline-offset: 1px;
+}
